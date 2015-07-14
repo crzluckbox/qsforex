@@ -1,30 +1,27 @@
 # -*- coding: utf-8 -*- 
-
-/*
- * Copyright (c) 2015 NAKATA Maho All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+# Copyright (c) 2015 NAKATA Maho All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
 
 import calendar
 import fileinput
@@ -123,45 +120,69 @@ if __name__ == "__main__":
             s_bid = pd.Series(_all.bid.values, index=idx)
             s_ask = pd.Series(_all.ask.values, index=idx)
 
-            ohlc_bid1m = s_bid.resample("60s", how="ohlc", closed="right", label="right", fill_method="ffill")
-            ohlc_ask1m = s_ask.resample("60s", how="ohlc", closed="right", label="right", fill_method="ffill")
+            ohlc_bid1m = s_bid.resample("60s", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-60s")
+            ohlc_ask1m = s_ask.resample("60s", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-60s")
+            ohlc_bid1m['vol']=pd.Series(0, index=ohlc_bid1m.index)
+            ohlc_ask1m['vol']=pd.Series(0, index=ohlc_ask1m.index)
             ohlc_bid1m_file = settings.CSV_DATA_DIR + "%s/1m/%02d/%s_%02d%02d%02d_bid1m.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask1m_file = settings.CSV_DATA_DIR + "%s/1m/%02d/%s_%02d%02d%02d_ask1m.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid1m.to_csv( ohlc_bid1m_file )
-            ohlc_ask1m.to_csv( ohlc_ask1m_file )
+            ohlc_bid1m.to_csv( ohlc_bid1m_file, date_format='%Y.%m.%d,%H:%M', header=False)
+            ohlc_ask1m.to_csv( ohlc_ask1m_file, date_format='%Y.%m.%d,%H:%M', header=False)
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid1m_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask1m_file)
 
-            ohlc_bid5m = s_bid.resample("300s", how="ohlc", closed="right", label="right")
-            ohlc_ask5m = s_ask.resample("300s", how="ohlc", closed="right", label="right")
+            ohlc_bid5m = s_bid.resample("300s", how="ohlc", closed="right", label="right", loffset="-300s")
+            ohlc_ask5m = s_ask.resample("300s", how="ohlc", closed="right", label="right", loffset="-300s")
+            ohlc_bid5m['vol']=pd.Series(0, index=ohlc_bid5m.index)
+            ohlc_ask5m['vol']=pd.Series(0, index=ohlc_ask5m.index)
             ohlc_bid5m_file = settings.CSV_DATA_DIR + "%s/5m/%02d/%s_%02d%02d%02d_bid5m.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask5m_file = settings.CSV_DATA_DIR + "%s/5m/%02d/%s_%02d%02d%02d_ask5m.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid5m.to_csv( ohlc_bid5m_file )
-            ohlc_ask5m.to_csv( ohlc_ask5m_file )
+            ohlc_bid5m.to_csv( ohlc_bid5m_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            ohlc_ask5m.to_csv( ohlc_ask5m_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid5m_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask5m_file)
 
-            ohlc_bid15m = s_bid.resample("900s", how="ohlc", closed="right", label="right")
-            ohlc_ask15m = s_ask.resample("900s", how="ohlc", closed="right", label="right")
+            ohlc_bid15m = s_bid.resample("900s", how="ohlc", closed="right", label="right", loffset="-900s")
+            ohlc_ask15m = s_ask.resample("900s", how="ohlc", closed="right", label="right", loffset="-900s")
+            ohlc_bid15m['vol']=pd.Series(0, index=ohlc_bid15m.index)
+            ohlc_ask15m['vol']=pd.Series(0, index=ohlc_ask15m.index)
             ohlc_bid15m_file = settings.CSV_DATA_DIR + "%s/15m/%02d/%s_%02d%02d%02d_bid15m.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask15m_file = settings.CSV_DATA_DIR + "%s/15m/%02d/%s_%02d%02d%02d_ask15m.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid15m.to_csv( ohlc_bid15m_file )
-            ohlc_ask15m.to_csv( ohlc_ask15m_file )
+            ohlc_bid15m.to_csv( ohlc_bid15m_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            ohlc_ask15m.to_csv( ohlc_ask15m_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid15m_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask15m_file)
 
-            ohlc_bid1h = s_bid.resample("1h", how="ohlc", closed="right", label="right", fill_method="ffill")
-            ohlc_ask1h = s_ask.resample("1h", how="ohlc", closed="right", label="right", fill_method="ffill")
+            ohlc_bid1h = s_bid.resample("1h", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-1h")
+            ohlc_ask1h = s_ask.resample("1h", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-1h")
+            ohlc_bid1h['vol']=pd.Series(0, index=ohlc_bid1h.index)
+            ohlc_ask1h['vol']=pd.Series(0, index=ohlc_ask1h.index)
             ohlc_bid1h_file = settings.CSV_DATA_DIR + "%s/1h/%02d/%s_%02d%02d%02d_bid1h.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask1h_file = settings.CSV_DATA_DIR + "%s/1h/%02d/%s_%02d%02d%02d_ask1h.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid1h.to_csv( ohlc_bid1h_file )
-            ohlc_ask1h.to_csv( ohlc_ask1h_file )
+            ohlc_bid1h.to_csv( ohlc_bid1h_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            ohlc_ask1h.to_csv( ohlc_ask1h_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid1h_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask1h_file)
 
-            ohlc_bid4h = s_bid.resample("4h", how="ohlc", closed="right", label="right", fill_method="ffill")
-            ohlc_ask4h = s_ask.resample("4h", how="ohlc", closed="right", label="right", fill_method="ffill")
+            ohlc_bid4h = s_bid.resample("4h", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-4h")
+            ohlc_ask4h = s_ask.resample("4h", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-4h")
+            ohlc_bid4h['vol']=pd.Series(0, index=ohlc_bid4h.index)
+            ohlc_ask4h['vol']=pd.Series(0, index=ohlc_ask4h.index)
             ohlc_bid4h_file = settings.CSV_DATA_DIR + "%s/4h/%02d/%s_%02d%02d%02d_bid4h.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask4h_file = settings.CSV_DATA_DIR + "%s/4h/%02d/%s_%02d%02d%02d_ask4h.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid4h.to_csv( ohlc_bid4h_file )
-            ohlc_ask4h.to_csv( ohlc_ask4h_file )
+            ohlc_bid4h.to_csv( ohlc_bid4h_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            ohlc_ask4h.to_csv( ohlc_ask4h_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid4h_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask4h_file)
 
-            ohlc_bid1d = s_bid.resample("D", how="ohlc", closed="right", label="right", fill_method="ffill")
-            ohlc_ask1d = s_ask.resample("D", how="ohlc", closed="right", label="right", fill_method="ffill")
+            ohlc_bid1d = s_bid.resample("D", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-1d")
+            ohlc_ask1d = s_ask.resample("D", how="ohlc", closed="right", label="right", fill_method="ffill", loffset="-1d")
+            ohlc_bid1d['vol']=pd.Series(0, index=ohlc_bid1d.index)
+            ohlc_ask1d['vol']=pd.Series(0, index=ohlc_ask1d.index)
             ohlc_bid1d_file = settings.CSV_DATA_DIR + "%s/1d/%02d/%s_%02d%02d%02d_bid1d.csv" % (symbol, y, symbol, y, m, d)
             ohlc_ask1d_file = settings.CSV_DATA_DIR + "%s/1d/%02d/%s_%02d%02d%02d_ask1d.csv" % (symbol, y, symbol, y, m, d)
-            ohlc_bid1d.to_csv( ohlc_bid1d_file )
-            ohlc_ask1d.to_csv( ohlc_ask1d_file )
+            ohlc_bid1d.to_csv( ohlc_bid1d_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            ohlc_ask1d.to_csv( ohlc_ask1d_file, date_format='%Y.%m.%d,%H:%M', header=False )
+            os.system("sed -i 's/\"//g' %s " % ohlc_bid1d_file)
+            os.system("sed -i 's/\"//g' %s " % ohlc_ask1d_file)
 
