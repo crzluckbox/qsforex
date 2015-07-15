@@ -148,8 +148,8 @@ class HistoricCSVPriceHandler(PriceHandler):
             _dt = dt.strptime(date_str, '%Y%m%d')
             pair_path = os.path.join(self.csv_dir, '%s/tick/%d/%s_%s.csv' % (p, int(_dt.year), p, date_str))
             self.pair_frames[p] = pd.io.parsers.read_csv(
-                pair_path, header=True, index_col=0, 
-                parse_dates=True, dayfirst=True,
+                pair_path, header=False, index_col=0, 
+                parse_dates=True, dayfirst=False,
                 names=("Time", "Ask", "Bid", "AskVolume", "BidVolume")
             )
             self.pair_frames[p]["Pair"] = p
