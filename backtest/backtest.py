@@ -18,6 +18,7 @@ class Backtest(object):
         self, pairs, data_handler, strategy, 
         strategy_params, portfolio, execution, 
         equity=100000.0, heartbeat=0.0, 
+        startday=20150110, endday=20150208,
         max_iters=10000000000
     ):
         """
@@ -26,7 +27,9 @@ class Backtest(object):
         self.pairs = pairs
         self.events = queue.Queue()
         self.csv_dir = settings.CSV_DATA_DIR
-        self.ticker = data_handler(self.pairs, self.events, self.csv_dir)
+        self.startday = startday
+        self.endday = endday
+        self.ticker = data_handler(self.pairs, self.events, self.csv_dir, self.startday, self.endday)
         self.strategy_params = strategy_params
         self.strategy = strategy(
             self.pairs, self.events, **self.strategy_params

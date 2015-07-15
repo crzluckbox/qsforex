@@ -91,7 +91,10 @@ if __name__ == "__main__":
 		#download
                 url = "http://www.dukascopy.com/datafeed/%s/%02d/%02d/%02d/%02dh_ticks.bi5" % (symbol, yy, mm-1, dd, hh)
                 file = settings.CSV_DATA_DIR + "%s/tick/%02d/%s_%02d_%02d_%02d_%02dh_ticks.bi5" % (symbol, y, symbol, y, m, d, h)
-                urllib.urlretrieve(url, file)
+                try: 
+                    urllib.urlretrieve(url, file)
+		except:
+                    print("cannot find" + url )
 
 	#Download has been finished
 
