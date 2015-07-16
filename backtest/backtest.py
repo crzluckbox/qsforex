@@ -17,7 +17,7 @@ class Backtest(object):
     def __init__(
         self, pairs, data_handler, strategy, 
         strategy_params, portfolio, execution, 
-        equity=100000.0, heartbeat=0.0, base_currency="GBP",
+        equity=100000.0, heartbeat=0.0, base_currency="USD",
         startday=20150110, endday=20150208,
         max_iters=10000000000
     ):
