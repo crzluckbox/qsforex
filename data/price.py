@@ -150,7 +150,7 @@ class HistoricCSVPriceHandler(PriceHandler):
             self.pair_frames[p] = pd.io.parsers.read_csv(
                 pair_path, header=False, index_col=0, 
                 parse_dates=True, dayfirst=False,
-                names=("Time", "Ask", "Bid", "AskVolume", "BidVolume")
+                names=("Time", "Bid", "Ask", "BidVolume", "AskVolume")
             )
             self.pair_frames[p]["Pair"] = p
         return pd.concat(self.pair_frames.values()).sort().iterrows()
