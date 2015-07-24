@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 try:
@@ -16,7 +18,7 @@ class Backtest(object):
     """
     def __init__(
         self, pairs, data_handler, strategy, 
-        strategy_params, portfolio, execution, 
+        strategy_params, portfolio, transaction,
         equity=100000.0, heartbeat=0.0, base_currency="USD",
         startday=20150110, endday=20150208,
         max_iters=10000000000
@@ -38,16 +40,16 @@ class Backtest(object):
         self.heartbeat = heartbeat
         self.base_currency = base_currency
         self.max_iters = max_iters
+        self.transaction = transaction()
         self.portfolio = portfolio(
-            self.ticker, self.events, equity=self.equity, base_currency=self.base_currency, backtest=True
+            self.ticker, self.events, transaction=self.transaction, equity=self.equity, base_currency=self.base_currency, backtest=True
         )
-        self.execution = execution()
 
     def _run_backtest(self):
         """
         Carries out an infinite while loop that polls the 
         events queue and directs each event to either the
-        strategy component of the execution handler. The
+        strategy component of the transaction handler. The
         loop will then pause for "heartbeat" seconds and
         continue unti the maximum number of iterations is
         exceeded.
@@ -67,7 +69,7 @@ class Backtest(object):
                     elif event.type == 'SIGNAL':
                         self.portfolio.execute_signal(event)
                     elif event.type == 'ORDER':
-                        self.execution.execute_order(event)
+                        self.transaction.execute_order(event)
             time.sleep(self.heartbeat)
             iters += 1
 

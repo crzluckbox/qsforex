@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 from copy import deepcopy
@@ -14,7 +16,7 @@ from qsforex.settings import OUTPUT_RESULTS_DIR
 
 class Portfolio(object):
     def __init__(
-        self, ticker, events, base_currency="USD", 
+        self, ticker, events, transaction, base_currency="USD", 
         leverage=20, equity=Decimal("100000.00"), 
         risk_per_trade=Decimal("0.02"), backtest=True
     ):
@@ -28,6 +30,7 @@ class Portfolio(object):
         self.backtest = backtest
         self.trade_units = self.calc_risk_position_size()
         self.positions = {}
+        self.transaction = transaction
         if self.backtest:
             self.backtest_file = self.create_equity_file()
 
@@ -126,51 +129,14 @@ class Portfolio(object):
             print(out_line[:-2])
             self.backtest_file.write(out_line)
 
+    def order_open(self, currency_pair, units, side, order_type):
+        print(self.ticker.prices[currency_pair]["time"])
+        print("In portfolio order_open")
+        self.transaction._order_open(self.ticker, currency_pair, units, side, order_type="market")
+        return(True)
+        
     def execute_signal(self, signal_event):       
         side = signal_event.side
         currency_pair = signal_event.instrument
         units = int(self.trade_units)
-        time = signal_event.time
-        
-        # If there is no position, create one
-        if currency_pair not in self.positions:
-            if side == "buy":
-                position_type = "long"
-            else:
-                position_type = "short"
-            self.add_new_position(
-                position_type, currency_pair, 
-                units, self.ticker
-            )
-
-        # If a position exists add or remove units
-        else:
-            ps = self.positions[currency_pair]
-
-            if side == "buy" and ps.position_type == "long":
-                add_position_units(currency_pair, units)
-
-            elif side == "sell" and ps.position_type == "long":
-                if units == ps.units:
-                    self.close_position(currency_pair)
-                # TODO: Allow units to be added/removed
-                elif units < ps.units:
-                    return
-                elif units > ps.units:
-                    return
-
-            elif side == "buy" and ps.position_type == "short":
-                if units == ps.units:
-                    self.close_position(currency_pair)
-                # TODO: Allow units to be added/removed
-                elif units < ps.units:
-                    return
-                elif units > ps.units:
-                    return
-                    
-            elif side == "sell" and ps.position_type == "short":
-                add_position_units(currency_pair, units)
-
-        order = OrderEvent(currency_pair, units, "market", side)
-        self.events.put(order)
-        
+        a = self.order_open(currency_pair, units, side, order_type="market")

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from qsforex.backtest.backtest import Backtest
-from qsforex.execution.execution import SimulatedExecution
+from qsforex.transaction.transaction import SimulatedTransaction
 from qsforex.portfolio.portfolio import Portfolio
 from qsforex import settings
 from qsforex.strategy.strategy import MovingAverageCrossStrategy
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     backtest = Backtest(
         pairs, HistoricCSVPriceHandler, 
         MovingAverageCrossStrategy, strategy_params, 
-        Portfolio, SimulatedExecution, 
+        Portfolio, SimulatedTransaction,
         startday=20150413, endday=20150417,
         equity=settings.EQUITY,
         base_currency=settings.BASE_CURRENCY
