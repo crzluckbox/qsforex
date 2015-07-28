@@ -17,8 +17,11 @@ class Backtest(object):
     an event-driven backtest on the foreign exchange markets.
     """
     def __init__(
-        self, pairs, data_handler, strategy, 
-        strategy_params, portfolio, transaction,
+        self, pairs, data_handler,
+        tradesignalstrategy, tradesignalstrategy_params,
+        tradeenterstrategy, tradeenterstrategy_params,
+        tradeexitstrategy, tradeexitstrategy_params,
+        portfolio, transaction, 
         equity=100000.0, heartbeat=0.0, base_currency="USD",
         startday=20150110, endday=20150208,
         max_iters=10000000000
@@ -32,15 +35,17 @@ class Backtest(object):
         self.startday = startday
         self.endday = endday
         self.ticker = data_handler(self.pairs, self.events, self.csv_dir, self.startday, self.endday)
-        self.strategy_params = strategy_params
-        self.strategy = strategy(
-            self.pairs, self.events, **self.strategy_params
-        )
+        self.transaction = transaction()
+        self.tradesignalstrategy_params = tradesignalstrategy_params
+        self.tradeenterstrategy_params = tradeenterstrategy_params
+        self.tradeexitstrategy_params = tradeexitstrategy_params
+        self.tradesignalstrategy = tradesignalstrategy(self.pairs, self.events, **self.tradesignalstrategy_params)
+        self.tradeenterstrategy = tradeenterstrategy(self.pairs, self.transaction, self.ticker, **self.tradeenterstrategy_params)
+        self.tradeexitstrategy = tradeexitstrategy(self.pairs, self.transaction, self.ticker, **self.tradeexitstrategy_params)
         self.equity = equity
         self.heartbeat = heartbeat
         self.base_currency = base_currency
         self.max_iters = max_iters
-        self.transaction = transaction()
         self.portfolio = portfolio(
             self.ticker, self.events, transaction=self.transaction, equity=self.equity, base_currency=self.base_currency, backtest=True
         )
@@ -64,10 +69,10 @@ class Backtest(object):
             else:
                 if event is not None:
                     if event.type == 'TICK':
-                        self.strategy.calculate_signals(event)
+                        self.tradesignalstrategy.calculate_signals(event)
                         self.portfolio.update_portfolio(event)
                     elif event.type == 'SIGNAL':
-                        self.portfolio.execute_signal(event)
+                        self.tradeenterstrategy.execute_signal(event)
                     elif event.type == 'ORDER':
                         self.transaction.execute_order(event)
             time.sleep(self.heartbeat)

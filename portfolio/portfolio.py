@@ -13,7 +13,6 @@ from qsforex.performance.performance import create_drawdowns
 from qsforex.portfolio.position import Position
 from qsforex.settings import OUTPUT_RESULTS_DIR
 
-
 class Portfolio(object):
     def __init__(
         self, ticker, events, transaction, base_currency="USD", 
@@ -29,49 +28,12 @@ class Portfolio(object):
         self.risk_per_trade = risk_per_trade
         self.backtest = backtest
         self.trade_units = self.calc_risk_position_size()
-        self.positions = {}
         self.transaction = transaction
         if self.backtest:
             self.backtest_file = self.create_equity_file()
 
     def calc_risk_position_size(self):
         return self.equity * self.risk_per_trade
-
-    def add_new_position(
-        self, position_type, currency_pair, units, ticker
-    ):
-        ps = Position(
-            self.base_currency, position_type, 
-            currency_pair, units, ticker
-        )
-        self.positions[currency_pair] = ps
-
-    def add_position_units(self, currency_pair, units):
-        if currency_pair not in self.positions:
-            return False
-        else:
-            ps = self.positions[currency_pair]
-            ps.add_units(units)
-            return True
-
-    def remove_position_units(self, currency_pair, units):
-        if currency_pair not in self.positions:
-            return False
-        else:
-            ps = self.positions[currency_pair]
-            pnl = ps.remove_units(units)
-            self.balance += pnl
-            return True
-
-    def close_position(self, currency_pair):
-        if currency_pair not in self.positions:
-            return False
-        else:
-            ps = self.positions[currency_pair]
-            pnl = ps.close_position()
-            self.balance += pnl
-            del[self.positions[currency_pair]]
-            return True
 
     def create_equity_file(self):
         filename = "backtest.csv"
@@ -109,34 +71,57 @@ class Portfolio(object):
         
         print("Simulation complete and results exported to %s" % out_filename)
 
+    def update_position_price(self, openorder):
+        instrument=openorder['instrument']
+        pnl = 0
+        if openorder['side'] == 'buy':
+            price = self.ticker.prices[instrument]['bid']
+            pnl = (price - openorder['price']) * openorder['units']
+        elif openorder['side'] == 'sell':
+            price = self.ticker.prices[instrument]['ask']
+            pnl = (openorder['price'] - price) * openorder['units']
+        return(pnl)
+
     def update_portfolio(self, tick_event):
         """
         This updates all positions ensuring an up to date
         unrealised profit and loss (PnL).
         """
-        currency_pair = tick_event.instrument
-        if currency_pair in self.positions:
-            ps = self.positions[currency_pair]
-            ps.update_position_price()
-        if self.backtest:
-            out_line = "%s,%s" % (tick_event.time, self.balance)
-            for pair in self.ticker.pairs:
-                if pair in self.positions:
-                    out_line += ",%s" % self.positions[pair].profit_base
-                else:
-                    out_line += ",0.00"
-            out_line += "\n"
-            print(out_line[:-2])
-            self.backtest_file.write(out_line)
+        PnL = Decimal("0")
+        # Close orders by stoploss and takeprofit
+        openorders=self.transaction.get_open_orders()
+        for openorder in openorders:
+            PnL = PnL + self.transaction.orders_stoploss_takeprofit(self.ticker, openorder)
 
-    def order_open(self, currency_pair, units, side, order_type):
-        print(self.ticker.prices[currency_pair]["time"])
-        print("In portfolio order_open")
-        self.transaction._order_open(self.ticker, currency_pair, units, side, order_type="market")
-        return(True)
-        
-    def execute_signal(self, signal_event):       
-        side = signal_event.side
-        currency_pair = signal_event.instrument
-        units = int(self.trade_units)
-        a = self.order_open(currency_pair, units, side, order_type="market")
+        # TODO: stop and limit order
+
+        # TODO: marketiftouched order
+
+        # TODO: trailing
+
+        # Calculate profit and loss by open orders
+        FloatingPnL = Decimal("0")
+        openorders=self.transaction.get_open_orders()
+        for openorder in openorders:
+            FloatingPnL = FloatingPnL + self.update_position_price(openorder)
+
+        self.balance = self.balance + PnL
+        self.equity = self.balance + FloatingPnL
+ 
+        if self.backtest:
+            out_line = "%s,%s,%s" % (tick_event.time, self.balance, self.equity)
+
+        for pair in self.ticker.pairs:
+             out_line +=  ",%s,%s,%s" % (pair, self.ticker.prices[pair]['bid'], self.ticker.prices[pair]['ask'])
+
+#            if pair in oself.positions:
+#                out_line += ",%s" % self.positions[pair].profit_base
+#            else:
+#                out_line += ",0.00"
+#            out_line += "\n"
+             print(out_line)
+#            self.backtest_file.write(out_line)
+        openorders=self.transaction.get_open_orders()
+        for openorder in openorders:
+            print(openorder)
+        print("")

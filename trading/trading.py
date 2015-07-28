@@ -33,7 +33,7 @@ def trade(events, strategy, portfolio, transaction, heartbeat):
                     strategy.calculate_signals(event)
                     portfolio.update_portfolio(event)
                 elif event.type == 'SIGNAL':
-                    portfolio.execute_signal(event)
+                    strategy.execute_signal(event)
                 elif event.type == 'ORDER':
                     transaction.execute_order(event)
         time.sleep(heartbeat)

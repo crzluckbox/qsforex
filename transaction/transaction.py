@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+from decimal import Decimal, getcontext, ROUND_HALF_DOWN
 
 from abc import ABCMeta, abstractmethod
 try:
@@ -49,32 +50,101 @@ class SimulatedTransaction(object):
      tradeOpened (ticket id, units), tradeReduced (ticket id, units, pl, interest)
     """
     def __init__(self):
-	self.__TransactionID__=0
-	self.__TicketID__=0
-        self.__Transaction__ =[]
-        self.__OpenTickets__ =[]
-
-    def _order_open(self, ticker, instrument, units, side, order_type, expiary=None, price=None, lowerBound=None, upperBound=None, stopLoss=None, takeProfit=None, trailingStop=None, comment=None, magicnumber=None):
+	self.__TransactionID__ = 0
+        self.__Transactions__ = []
+	self.__TicketID__ = 0
+        self.__Tickets__ = []
+        self.__OpenTickets__ = []
         
-        # order is always successful
-        newTransaction= {"id" : self.__TransactionID__, "units" : units, "side" : side, "type" : order_type } 
-        self.__Transaction__.append(newTransaction)
+    def order_open(self, ticker, instrument, units, side, order_type, expiary=None, price=None, lowerBound=None, upperBound=None, stopLoss=0.0, takeProfit=0.0, trailingStop=None, comment=None, magicnumber=None):
+
+        transactiontime = ticker.prices[instrument]['time']
+        newTransaction= {"id" : self.__TransactionID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop } 
+
+        if side ==  "sell" and order_type == "market":
+            price = ticker.prices[instrument]['bid']
+        elif side == "buy" and order_type == "market": 
+            price = ticker.prices[instrument]['ask']
+        else:
+            print ("not supported")
+            return(False)
+
+        newTicket= {"id" : self.__TicketID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "time" : transactiontime, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop } 
+        self.__Transactions__.append(newTransaction)
+        self.__Tickets__.append(newTicket)
+        self.__OpenTickets__.append(newTicket)
+
 	self.__TicketID__=self.__TicketID__+1
         self.__TransactionID__=self.__TransactionID__+1
-        print (ticker.prices[instrument]["time"]) //price
-        ResponseTonewTransaction= { "instrument" : instrument, "time" : "0", "price" : 1.2 }
-        return ResponseTonewTransaction
-        
-    def _order_modify(self, ticketID):
+        return(newTicket)
+
+
+    def order_modify(self, ticketID):
         self.__TransactionID__=self.__TransactionID__+1
 
-    def _order_close(self, ticketID):
+    def order_close(self, ticketID):
         self.__TransactionID__=self.__TransactionID__+1
 
-#    def get_open_orders(self):
+    def get_open_orders(self):
+        return (self.__OpenTickets__)
  
 #    def order_info(self, ticketID):
                 
+    
+    def orders_stoploss_takeprofit(self, ticker, openorder):
+        instrument = openorder['instrument']
+        units = openorder['units']
+        side = openorder['side']
+        price = openorder['price']
+        order_type = openorder['type']
+        takeProfit = openorder['takeProfit']
+        stopLoss = openorder['stopLoss']
+	expiary = openorder['expiary']
+        lowerBound = openorder['lowerBound']
+        upperBound = openorder['upperBound']
+        trailingStop = openorder['trailingStop']
+        transactiontime = ticker.prices[instrument]['time']
+
+        pnl = Decimal("0")
+        if openorder['side'] == 'buy':
+            price = ticker.prices[instrument]['bid']
+            if takeProfit == 0.0:
+               takeProfit = 10e+200 #XXX PyFloat_GetMax()             
+            if price >= takeProfit:
+                print("takeprofit hit buy!!")
+                pnl = (takeProfit - openorder['price']) * openorder['units']
+                print(pnl)
+            elif price <= stopLoss:
+                print("stoploss hit buy!!")
+                pnl = - (openorder['price'] - stopLoss) * openorder['units']
+                print(pnl)
+            else:
+                return(pnl)
+        elif openorder['side'] == 'sell':
+            price = ticker.prices[instrument]['ask']
+            if stopLoss == 0.0:
+               stopLoss = 10e+200 #XXX PyFloat_GetMax()             
+            if price <= takeProfit:
+                print("takeprofit hit sell!!")
+                pnl = (openorder['price'] - takeProfit) * openorder['units']
+                print(pnl)
+            elif price >= stopLoss:
+                print("stoploss hit sell!!")
+                pnl = (openorder['price'] - stopLoss) * openorder['units']
+                print(pnl)
+            else:
+                return(pnl)
+
+        newtradeClosed = {"id" : openorder['id'], "units" : openorder['units'] }
+        newTransaction= {"id" : self.__TransactionID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop, "tradeClosed" : newtradeClosed } 
+        self.__Transactions__.append(newTransaction)
+        self.__TransactionID__=self.__TransactionID__+1
+        
+        # remove ticket
+        self.__Tickets__.remove(openorder)
+        self.__OpenTickets__.remove(openorder)
+        
+        return (pnl)
 
 
 class OANDATransactionHandler(TransactionHandler):

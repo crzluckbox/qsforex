@@ -1,6 +1,5 @@
 from decimal import Decimal, getcontext, ROUND_HALF_DOWN
 
-
 class Position(object):
     def __init__(
         self, base_currency, position_type, 
@@ -65,14 +64,19 @@ class Position(object):
             Decimal("0.00001"), ROUND_HALF_DOWN
         )
 
-    def update_position_price(self):
-        ticker_cur = self.ticker.prices[self.currency_pair]
-        if self.position_type == "long":
-            self.cur_price = Decimal(str(ticker_cur["bid"]))
-        else:
-            self.cur_price = Decimal(str(ticker_cur["ask"]))
-        self.profit_base = self.calculate_profit_base()
-        self.profit_perc = self.calculate_profit_perc()
+    def update_position_price(self, **openorder):
+        print (openorder)
+        print (openorder['instrument'])
+        print (openorder['units'])
+        print (openorder['side'])
+ 
+#        ticker_cur = self.ticker.prices[self.currency_pair]
+#        if self.position_type == "long":
+#            self.cur_price = Decimal(str(ticker_cur["bid"]))
+#        else:
+#            self.cur_price = Decimal(str(ticker_cur["ask"]))
+#        self.profit_base = self.calculate_profit_base()
+#        self.profit_perc = self.calculate_profit_perc()
 
     def add_units(self, units):
         cp = self.ticker.prices[self.currency_pair]
