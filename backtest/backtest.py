@@ -34,8 +34,9 @@ class Backtest(object):
         self.csv_dir = settings.CSV_DATA_DIR
         self.startday = startday
         self.endday = endday
-        self.ticker = data_handler(self.pairs, self.events, self.csv_dir, self.startday, self.endday)
-        self.transaction = transaction()
+        self.base_currency = base_currency
+        self.ticker = data_handler(self.pairs, self.base_currency, self.events, self.csv_dir, self.startday, self.endday)
+        self.transaction = transaction(base_currency)
         self.tradesignalstrategy_params = tradesignalstrategy_params
         self.tradeenterstrategy_params = tradeenterstrategy_params
         self.tradeexitstrategy_params = tradeexitstrategy_params
@@ -44,7 +45,6 @@ class Backtest(object):
         self.tradeexitstrategy = tradeexitstrategy(self.pairs, self.transaction, self.ticker, **self.tradeexitstrategy_params)
         self.equity = equity
         self.heartbeat = heartbeat
-        self.base_currency = base_currency
         self.max_iters = max_iters
         self.portfolio = portfolio(
             self.ticker, self.events, transaction=self.transaction, equity=self.equity, base_currency=self.base_currency, backtest=True
@@ -69,7 +69,8 @@ class Backtest(object):
             else:
                 if event is not None:
                     if event.type == 'TICK':
-                        self.tradesignalstrategy.calculate_signals(event)
+                        if event.instrument in self.pairs:
+                            self.tradesignalstrategy.calculate_signals(event)
                         self.portfolio.update_portfolio(event)
                     elif event.type == 'SIGNAL':
                         self.tradeenterstrategy.execute_signal(event)

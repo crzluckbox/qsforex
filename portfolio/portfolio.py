@@ -74,13 +74,33 @@ class Portfolio(object):
     def update_position_price(self, openorder):
         instrument=openorder['instrument']
         pnl = 0
-        if openorder['side'] == 'buy':
-            price = self.ticker.prices[instrument]['bid']
-            pnl = (price - openorder['price']) * openorder['units']
-        elif openorder['side'] == 'sell':
-            price = self.ticker.prices[instrument]['ask']
-            pnl = (openorder['price'] - price) * openorder['units']
-        return(pnl)
+        quote_currency = instrument[3:]
+        if quote_currency == self.base_currency:
+            if openorder['side'] == 'buy':
+                price = self.ticker.prices[instrument]['bid']
+                _pnl = (price - openorder['price']) * openorder['units']
+                pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                openorder["floatingpnl"] = pnl
+            elif openorder['side'] == 'sell':
+                price = self.ticker.prices[instrument]['ask']
+                _pnl = (openorder['price'] - price) * openorder['units']
+                pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                openorder["floatingpnl"] = pnl
+            return(pnl)
+        else:
+            quote_currency_pair = "%s%s" % (quote_currency, self.base_currency)
+            if openorder['side'] == 'buy':
+                price = self.ticker.prices[instrument]['bid']
+                _pnl = (price - openorder['price']) * openorder['units'] * self.ticker.prices[quote_currency_pair]['bid']
+                pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                openorder["floatingpnl"] = pnl
+            elif openorder['side'] == 'sell':
+                price = self.ticker.prices[instrument]['ask']
+                _pnl = (openorder['price'] - price) * openorder['units'] * self.ticker.prices[quote_currency_pair]['ask']
+                pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                openorder["floatingpnl"] = pnl
+            return(pnl)
+         
 
     def update_portfolio(self, tick_event):
         """
@@ -110,18 +130,14 @@ class Portfolio(object):
  
         if self.backtest:
             out_line = "%s,%s,%s" % (tick_event.time, self.balance, self.equity)
-
         for pair in self.ticker.pairs:
              out_line +=  ",%s,%s,%s" % (pair, self.ticker.prices[pair]['bid'], self.ticker.prices[pair]['ask'])
+        print(out_line)
+        self.backtest_file.write(out_line)
+        
+#        openorders=self.transaction.get_open_orders()
+#        if len(openorders) >= 1:
+#            for i in openorders:
+#                print (i)
+#            print("\n")
 
-#            if pair in oself.positions:
-#                out_line += ",%s" % self.positions[pair].profit_base
-#            else:
-#                out_line += ",0.00"
-#            out_line += "\n"
-             print(out_line)
-#            self.backtest_file.write(out_line)
-        openorders=self.transaction.get_open_orders()
-        for openorder in openorders:
-            print(openorder)
-        print("")

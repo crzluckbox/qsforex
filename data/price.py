@@ -76,6 +76,64 @@ class PriceHandler(object):
         )
         return inv_pair, inv_bid, inv_ask
 
+def check_reverse_pair(pair):
+    if pair == "USDEUR":
+       return ("EURUSD")
+    if pair == "JPYUSD":
+       return ("USDJPY")
+    if pair == "USDGBP":
+       return ("GBPUSD")
+    if pair == "USDAUD":
+       return ("AUDUSD")
+    if pair == "CHFUSD":
+       return ("CHFUSD")
+    if pair == "CADUSD":
+       return ("CADUSD")
+    if pair == "USDNZD":
+       return ("NZDUSD")
+    if pair == "JPYEUR":
+       return ("EURJPY")
+    if pair == "GBPEUR":
+       return ("GBPEUR")
+    if pair == "JPYGBP":
+       return ("GBPJPY")
+    if pair == "AUDEUR":
+       return ("EURAUD")
+    if pair == "JPYAUD":
+       return ("AUDJPY")
+    if pair == "AUDGBP":
+       return ("GBPAUD")
+    if pair == "CHFEUR":
+       return ("EURCHF")
+    if pair == "JPYCHF":
+       return ("CHFJPY")
+    if pair == "CHFGBP":
+       return ("GBPCHF")
+    if pair == "CHFAUD":
+       return ("AUDCHF")
+    if pair == "CADEUR":
+       return ("EURCAD")
+    if pair == "JPYCAD":
+       return ("CADJPY")
+    if pair == "CADGBP":
+       return ("GBPCAD")
+    if pair == "CADAUD":
+       return ("AUDCAD")
+    if pair == "CHFCAD":
+       return ("CADCHF")
+    if pair == "NZDEUR":
+       return ("EURNZD")
+    if pair == "JPYNZD":
+       return ("NZDJPY")
+    if pair == "NZDGBP":
+       return ("GBPNZD")
+    if pair == "NZDAUD":
+       return ("NZDAUD")
+    if pair == "CHFNZD":
+       return ("NZDCHF")
+    if pair == "CADNZD":
+       return ("NZDCAD")
+    return(pair)
 
 class HistoricCSVPriceHandler(PriceHandler):
     """
@@ -84,7 +142,7 @@ class HistoricCSVPriceHandler(PriceHandler):
     to the provided events queue.
     """
 
-    def __init__(self, pairs, events_queue, csv_dir, startday, endday):
+    def __init__(self, pairs, base_currency, events_queue, csv_dir, startday, endday):
         """
         Initialises the historic data handler by requesting
         the location of the CSV files and a list of symbols.
@@ -98,17 +156,25 @@ class HistoricCSVPriceHandler(PriceHandler):
         events_queue - The events queue to send the ticks to.
         csv_dir - Absolute directory path to the CSV files.
         """
-        self.pairs = pairs
+        self.base_currency = base_currency
+        self.pairs = []
+        for _pair in pairs:
+            self.pairs.append(_pair)
+            __pair__ = _pair[3:] + self.base_currency
+            self.pairs.append(check_reverse_pair(__pair__))
+
         self.events_queue = events_queue
         self.csv_dir = csv_dir
         self.prices = self._set_up_prices_dict()
         self.pair_frames = {}
-        self.file_dates = self._list_all_file_dates(pairs,startday,endday)
+        self.file_dates = self._list_all_file_dates(self.pairs, startday, endday)
         self.continue_backtest = True
         self.cur_date_idx = 0
         self.cur_date_pairs = self._open_convert_csv_files_for_day(
             self.file_dates[self.cur_date_idx]
         )
+
+
 
     def _list_all_file_dates(self, pairs, startday, endday):
         """
@@ -123,7 +189,7 @@ class HistoricCSVPriceHandler(PriceHandler):
             date_list.append(start_dt + timedelta(n))
 
         matching_list = []
-        for _pair in pairs:
+        for _pair in self.pairs:
             for _date in date_list:
                file=settings.CSV_DATA_DIR + _pair + "/tick/" + str(_date.year) + "/" + _pair + "_" + str(_date.year) + "%02d" % int(_date.month) + "%02d" % int(_date.day) + ".csv"
                if os.path.isfile(file):

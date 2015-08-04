@@ -49,18 +49,19 @@ class SimulatedTransaction(object):
      trailingStopLossDistance, pl (profit/loss), interst, accountBalance,
      tradeOpened (ticket id, units), tradeReduced (ticket id, units, pl, interest)
     """
-    def __init__(self):
+    def __init__(self, base_currency):
 	self.__TransactionID__ = 0
         self.__Transactions__ = []
 	self.__TicketID__ = 0
         self.__Tickets__ = []
         self.__OpenTickets__ = []
-        
+        self.base_currency = base_currency        
     def order_open(self, ticker, instrument, units, side, order_type, expiary=None, price=None, lowerBound=None, upperBound=None, stopLoss=0.0, takeProfit=0.0, trailingStop=None, comment=None, magicnumber=None):
 
         transactiontime = ticker.prices[instrument]['time']
         newTransaction= {"id" : self.__TransactionID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop } 
 
+        print("order open")
         if side ==  "sell" and order_type == "market":
             price = ticker.prices[instrument]['bid']
         elif side == "buy" and order_type == "market": 
@@ -106,34 +107,67 @@ class SimulatedTransaction(object):
         transactiontime = ticker.prices[instrument]['time']
 
         pnl = Decimal("0")
-        if openorder['side'] == 'buy':
-            price = ticker.prices[instrument]['bid']
-            if takeProfit == 0.0:
-               takeProfit = 10e+200 #XXX PyFloat_GetMax()             
-            if price >= takeProfit:
-                print("takeprofit hit buy!!")
-                pnl = (takeProfit - openorder['price']) * openorder['units']
-                print(pnl)
-            elif price <= stopLoss:
-                print("stoploss hit buy!!")
-                pnl = - (openorder['price'] - stopLoss) * openorder['units']
-                print(pnl)
-            else:
-                return(pnl)
-        elif openorder['side'] == 'sell':
-            price = ticker.prices[instrument]['ask']
-            if stopLoss == 0.0:
-               stopLoss = 10e+200 #XXX PyFloat_GetMax()             
-            if price <= takeProfit:
-                print("takeprofit hit sell!!")
-                pnl = (openorder['price'] - takeProfit) * openorder['units']
-                print(pnl)
-            elif price >= stopLoss:
-                print("stoploss hit sell!!")
-                pnl = (openorder['price'] - stopLoss) * openorder['units']
-                print(pnl)
-            else:
-                return(pnl)
+
+        quote_currency = instrument[3:]
+        if quote_currency == self.base_currency:
+            if openorder['side'] == 'buy':
+                price = ticker.prices[instrument]['bid']
+                if takeProfit == 0.0:
+                    takeProfit = 10e+200 #XXX PyFloat_GetMax()             
+                if price >= takeProfit:
+                    print("takeprofit hit buy!!")
+                    _pnl = ((takeProfit - openorder['price']) * openorder['units'])
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                elif price <= stopLoss:
+                    print("stoploss hit buy!!")
+                    _pnl = - ((openorder['price'] - stopLoss) * openorder['units'])
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                else:
+                    return(pnl)
+            elif openorder['side'] == 'sell':
+                price = ticker.prices[instrument]['ask']
+                if stopLoss == 0.0:
+                    stopLoss = 10e+200 #XXX PyFloat_GetMax()             
+                if price <= takeProfit:
+                    print("takeprofit hit sell!!")
+                    _pnl = ((openorder['price'] - takeProfit) * openorder['units'])
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                elif price >= stopLoss:
+                    print("stoploss hit sell!!")
+                    _pnl = ((openorder['price'] - stopLoss) * openorder['units'])
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                else:
+                    return(pnl)
+        else:
+            quote_currency_pair = "%s%s" % (quote_currency, self.base_currency)
+            if openorder['side'] == 'buy':
+                price = ticker.prices[instrument]['bid']
+                if takeProfit == 0.0:
+                    takeProfit = 10e+200 #XXX PyFloat_GetMax()             
+                if price >= takeProfit:
+                    print("takeprofit hit buy!!")
+                    _pnl = ((takeProfit - openorder['price']) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                elif price <= stopLoss:
+                    print("stoploss hit buy!!")
+                    _pnl = - ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                else:
+                    return(pnl)
+            elif openorder['side'] == 'sell':
+                price = ticker.prices[instrument]['ask']
+                if stopLoss == 0.0:
+                    stopLoss = 10e+200 #XXX PyFloat_GetMax()             
+                if price <= takeProfit:
+                    print("takeprofit hit sell!!")
+                    _pnl = ((openorder['price'] - takeProfit) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                elif price >= stopLoss:
+                    print("stoploss hit sell!!")
+                    _pnl = ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                else:
+                    return(pnl)
 
         newtradeClosed = {"id" : openorder['id'], "units" : openorder['units'] }
         newTransaction= {"id" : self.__TransactionID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop, "tradeClosed" : newtradeClosed } 
