@@ -86,9 +86,9 @@ def check_reverse_pair(pair):
     if pair == "USDAUD":
        return ("AUDUSD")
     if pair == "CHFUSD":
-       return ("CHFUSD")
+       return ("USDCHF")
     if pair == "CADUSD":
-       return ("CADUSD")
+       return ("USDCAD")
     if pair == "USDNZD":
        return ("NZDUSD")
     if pair == "JPYEUR":
@@ -157,11 +157,12 @@ class HistoricCSVPriceHandler(PriceHandler):
         csv_dir - Absolute directory path to the CSV files.
         """
         self.base_currency = base_currency
-        self.pairs = []
+        self._pairs = []
         for _pair in pairs:
-            self.pairs.append(_pair)
+            self._pairs.append(_pair)
             __pair__ = _pair[3:] + self.base_currency
-            self.pairs.append(check_reverse_pair(__pair__))
+            self._pairs.append(check_reverse_pair(__pair__))
+        self.pairs = list(set(self._pairs))
 
         self.events_queue = events_queue
         self.csv_dir = csv_dir

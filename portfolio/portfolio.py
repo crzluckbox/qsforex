@@ -128,12 +128,12 @@ class Portfolio(object):
         self.balance = self.balance + PnL
         self.equity = self.balance + FloatingPnL
  
-        if self.backtest:
-            out_line = "%s,%s,%s" % (tick_event.time, self.balance, self.equity)
-        for pair in self.ticker.pairs:
-             out_line +=  ",%s,%s,%s" % (pair, self.ticker.prices[pair]['bid'], self.ticker.prices[pair]['ask'])
-        print(out_line)
-        self.backtest_file.write(out_line)
+#        if self.backtest:
+#            out_line = "%s,%s,%s" % (tick_event.time, self.balance, self.equity)
+#        for pair in self.ticker.pairs:
+#             out_line +=  ",%s,%s,%s" % (pair, self.ticker.prices[pair]['bid'], self.ticker.prices[pair]['ask'])
+#        print(out_line)
+#        self.backtest_file.write(out_line)
         
 #        openorders=self.transaction.get_open_orders()
 #        if len(openorders) >= 1:

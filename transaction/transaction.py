@@ -61,7 +61,6 @@ class SimulatedTransaction(object):
         transactiontime = ticker.prices[instrument]['time']
         newTransaction= {"id" : self.__TransactionID__, "instrument" : instrument, "units" : units, "side" : side, "type" : order_type, "expiary" : expiary, "price" : price, "lowerBound" : lowerBound, "upperBound" : upperBound, "stopLoss" : stopLoss, "takeProfit" : takeProfit, "trailingStop" : trailingStop } 
 
-        print("order open")
         if side ==  "sell" and order_type == "market":
             price = ticker.prices[instrument]['bid']
         elif side == "buy" and order_type == "market": 
@@ -118,10 +117,14 @@ class SimulatedTransaction(object):
                     print("takeprofit hit buy!!")
                     _pnl = ((takeProfit - openorder['price']) * openorder['units'])
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    _price = takeProfit
+                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                 elif price <= stopLoss:
                     print("stoploss hit buy!!")
                     _pnl = - ((openorder['price'] - stopLoss) * openorder['units'])
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    pips = ((stopLoss - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _price = stopLoss
                 else:
                     return(pnl)
             elif openorder['side'] == 'sell':
@@ -130,12 +133,16 @@ class SimulatedTransaction(object):
                     stopLoss = 10e+200 #XXX PyFloat_GetMax()             
                 if price <= takeProfit:
                     print("takeprofit hit sell!!")
-                    _pnl = ((openorder['price'] - takeProfit) * openorder['units'])
+                    _pnl = ((takeProfit - openorder['price']) * openorder['units'])
+                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    _price = takeProfit
                 elif price >= stopLoss:
                     print("stoploss hit sell!!")
-                    _pnl = ((openorder['price'] - stopLoss) * openorder['units'])
+                    _pnl = - ((openorder['price'] - stopLoss) * openorder['units'])
+                    pips = - ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    _price = stopLoss
                 else:
                     return(pnl)
         else:
@@ -145,12 +152,16 @@ class SimulatedTransaction(object):
                 if takeProfit == 0.0:
                     takeProfit = 10e+200 #XXX PyFloat_GetMax()             
                 if price >= takeProfit:
-                    print("takeprofit hit buy!!")
+                    #print("takeprofit hit buy!!")
                     _pnl = ((takeProfit - openorder['price']) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
+                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _price = takeProfit
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                 elif price <= stopLoss:
-                    print("stoploss hit buy!!")
+                    #print("stoploss hit buy!!")
                     _pnl = - ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
+                    pips = - ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _price = stopLoss
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                 else:
                     return(pnl)
@@ -159,13 +170,17 @@ class SimulatedTransaction(object):
                 if stopLoss == 0.0:
                     stopLoss = 10e+200 #XXX PyFloat_GetMax()             
                 if price <= takeProfit:
-                    print("takeprofit hit sell!!")
+                    #print("takeprofit hit sell!!")
                     _pnl = ((openorder['price'] - takeProfit) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    pips = ((openorder['price'] - takeProfit) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _price = takeProfit
                 elif price >= stopLoss:
-                    print("stoploss hit sell!!")
+                    #print("stoploss hit sell!!")
                     _pnl = ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
+                    pips = ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _price = stopLoss
                 else:
                     return(pnl)
 
@@ -174,6 +189,16 @@ class SimulatedTransaction(object):
         self.__Transactions__.append(newTransaction)
         self.__TransactionID__=self.__TransactionID__+1
         
+        opentime = openorder["time"].strftime("%Y-%m-%d %H:%M:%S")
+        closetime = ticker.prices[instrument]['time'].strftime("%Y-%m-%d %H:%M:%S")
+        duration = ticker.prices[instrument]['time'] - openorder["time"]
+        duration_hours, remainder = divmod(duration.seconds, 3600)
+        duration_minutes, duration_seconds = divmod(remainder, 60)
+        duration_hours += duration.days*24
+        print("%s, " % opentime[:23] + "%s, " % closetime[:23] + "%6s, " % openorder["instrument"] + "%4s, " 
+         % openorder["side"] + "%7s, " % openorder["price"] + "%7s, " % _price + "%6s, " % pips 
+         + "pips, %8s" % pnl + "$, " + "%02d:%02d, " % (duration_hours, duration_minutes)
+         + "%7s, " % ticker.prices[instrument]['bid'] + "%7s" % ticker.prices[instrument]['ask'])
         # remove ticket
         self.__Tickets__.remove(openorder)
         self.__OpenTickets__.remove(openorder)

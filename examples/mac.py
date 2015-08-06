@@ -12,7 +12,8 @@ from qsforex.data.price import HistoricCSVPriceHandler
 
 if __name__ == "__main__":
     # Trade on GBP/USD and EUR/USD
-    pairs = ["EURUSD"]
+#    pairs = ["EURUSD"]
+    pairs = ["USDCHF"]
     
     # Create the strategy parameters
     MovingAverageCrossStrategy_params = {
@@ -20,14 +21,14 @@ if __name__ == "__main__":
         "long_window": 2000
     }
     tradeEnterStrategy_params = {
-        "takeprofit": 1000, 
-        "stoploss":   500,
+        "takeprofit": 500, 
+        "stoploss":   200,
         "maxpositions": 10,
         "units": 100000
     }
     tradeExitStrategy_params = {
-        "takeprofit": 1000, 
-        "stoploss":   500
+        "takeprofit": 500, 
+        "stoploss":   200
     }
     # Create and execute the backtest
     backtest = Backtest(
