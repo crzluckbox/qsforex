@@ -114,16 +114,14 @@ class SimulatedTransaction(object):
                 if takeProfit == 0.0:
                     takeProfit = 10e+200 #XXX PyFloat_GetMax()             
                 if price >= takeProfit:
-                    print("takeprofit hit buy!!")
                     _pnl = ((takeProfit - openorder['price']) * openorder['units'])
+                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                     _price = takeProfit
-                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                 elif price <= stopLoss:
-                    print("stoploss hit buy!!")
                     _pnl = - ((openorder['price'] - stopLoss) * openorder['units'])
+                    pips = - ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
-                    pips = ((stopLoss - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     _price = stopLoss
                 else:
                     return(pnl)
@@ -132,15 +130,13 @@ class SimulatedTransaction(object):
                 if stopLoss == 0.0:
                     stopLoss = 10e+200 #XXX PyFloat_GetMax()             
                 if price <= takeProfit:
-                    print("takeprofit hit sell!!")
-                    _pnl = ((takeProfit - openorder['price']) * openorder['units'])
-                    pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _pnl = ((openorder['price'] - takeProfit) * openorder['units'])
+                    pips = ((openorder['price'] - takeProfit) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                     _price = takeProfit
                 elif price >= stopLoss:
-                    print("stoploss hit sell!!")
-                    _pnl = - ((openorder['price'] - stopLoss) * openorder['units'])
-                    pips = - ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    _pnl = - ((stopLoss - openorder['price']) * openorder['units'])
+                    pips = - ((stopLoss - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                     _price = stopLoss
                 else:
@@ -152,13 +148,11 @@ class SimulatedTransaction(object):
                 if takeProfit == 0.0:
                     takeProfit = 10e+200 #XXX PyFloat_GetMax()             
                 if price >= takeProfit:
-                    #print("takeprofit hit buy!!")
                     _pnl = ((takeProfit - openorder['price']) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
                     pips = ((takeProfit - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     _price = takeProfit
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                 elif price <= stopLoss:
-                    #print("stoploss hit buy!!")
                     _pnl = - ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['bid']
                     pips = - ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     _price = stopLoss
@@ -170,16 +164,14 @@ class SimulatedTransaction(object):
                 if stopLoss == 0.0:
                     stopLoss = 10e+200 #XXX PyFloat_GetMax()             
                 if price <= takeProfit:
-                    #print("takeprofit hit sell!!")
                     _pnl = ((openorder['price'] - takeProfit) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
-                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                     pips = ((openorder['price'] - takeProfit) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
                     _price = takeProfit
                 elif price >= stopLoss:
-                    #print("stoploss hit sell!!")
-                    _pnl = ((openorder['price'] - stopLoss) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
+                    _pnl = - ((stopLoss - openorder['price']) * openorder['units']) * ticker.prices[quote_currency_pair]['ask']
                     pnl = _pnl.quantize(Decimal("0.01"), ROUND_HALF_DOWN)
-                    pips = ((openorder['price'] - stopLoss) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
+                    pips = - ((stopLoss - openorder['price']) * 10000).quantize(Decimal("0.1"), ROUND_HALF_DOWN)
                     _price = stopLoss
                 else:
                     return(pnl)

@@ -160,8 +160,9 @@ class HistoricCSVPriceHandler(PriceHandler):
         self._pairs = []
         for _pair in pairs:
             self._pairs.append(_pair)
-            __pair__ = _pair[3:] + self.base_currency
-            self._pairs.append(check_reverse_pair(__pair__))
+            if _pair[3:] != self.base_currency:
+                __pair__ = _pair[3:] + self.base_currency
+                self._pairs.append(check_reverse_pair(__pair__))
         self.pairs = list(set(self._pairs))
 
         self.events_queue = events_queue
