@@ -1,3 +1,4 @@
+from decimal import Decimal, getcontext, ROUND_HALF_DOWN
 import copy
 
 from qsforex.event.event import SignalEvent
@@ -100,3 +101,34 @@ class MovingAverageCrossStrategy(object):
                     self.events.put(signal)
                     pd["invested"] = False
             pd["ticks"] += 1
+
+
+class tradeEnterStrategy(object):
+    def __init__(self, pairs, transaction, ticker, takeprofit=200, stoploss=500, maxpositions=10, units=100000):
+        self.takeprofit = takeprofit
+        self.stoploss = stoploss
+        self.maxpositions = maxpositions
+        self.units = units
+        self.transaction = transaction
+        self.ticker = ticker
+
+    def execute_signal(self, signal_event):
+        side = signal_event.side
+        pair = signal_event.instrument
+        units = self.units
+        digits = 0.00001 # it depends on instrument
+        if side == 'buy':
+            _takeprofit = self.ticker.prices[pair]['ask'] + Decimal(self.takeprofit * digits).quantize(Decimal("0.00001"), ROUND_HALF_DOWN)
+            _stoploss = self.ticker.prices[pair]['ask'] -  Decimal(self.stoploss * digits).quantize(Decimal("0.00001"), ROUND_HALF_DOWN)
+        elif side == 'sell':
+            _takeprofit = self.ticker.prices[pair]['bid'] - Decimal(self.takeprofit * digits).quantize(Decimal("0.00001"), ROUND_HALF_DOWN)
+            _stoploss = self.ticker.prices[pair]['bid'] + Decimal(self.stoploss * digits).quantize(Decimal("0.00001"), ROUND_HALF_DOWN)
+
+        a = self.transaction.order_open(self.ticker, pair, units, side, order_type='market', expiary=None, price=None, lowerBound=None, upperBound=None, stopLoss=_stoploss, takeProfit=_takeprofit)
+
+class tradeExitStrategy(object):
+    def __init__(self, pairs, transaction, ticker, takeprofit=200, stoploss=500):
+        self.takeprofit = takeprofit
+        self.stoploss = stoploss
+        self.transactin = transaction
+        self.ticker = ticker

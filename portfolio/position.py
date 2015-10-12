@@ -1,12 +1,11 @@
 from decimal import Decimal, getcontext, ROUND_HALF_DOWN
 
-
 class Position(object):
     def __init__(
-        self, home_currency, position_type, 
+        self, base_currency, position_type, 
         currency_pair, units, ticker
     ):
-        self.home_currency = home_currency  # Account denomination (e.g. GBP)
+        self.base_currency = base_currency  # Account denomination (e.g. GBP)
         self.position_type = position_type  # Long or short
         self.currency_pair = currency_pair  # Intended traded currency pair
         self.units = units
@@ -16,10 +15,13 @@ class Position(object):
         self.profit_perc = self.calculate_profit_perc()
 
     def set_up_currencies(self):
-        self.base_currency = self.currency_pair[:3]    # For EUR/USD, this is EUR
         self.quote_currency = self.currency_pair[3:]   # For EUR/USD, this is USD
         # For EUR/USD, with account denominated in GBP, this is USD/GBP
-        self.quote_home_currency_pair = "%s%s" % (self.quote_currency, self.home_currency)
+        self.quote_base_currency_pair = "%s%s" % (self.quote_currency, self.base_currency)
+        if self.quote_currency == self.base_currency:
+            self.is_same_quote_base_currency_pair = True
+        else:
+            self.is_same_quote_base_currency_pair = False
 
         ticker_cur = self.ticker.prices[self.currency_pair]
         if self.position_type == "long":
@@ -42,11 +44,16 @@ class Position(object):
 
     def calculate_profit_base(self):
         pips = self.calculate_pips()
-        ticker_qh = self.ticker.prices[self.quote_home_currency_pair]
-        if self.position_type == "long":
-            qh_close = ticker_qh["bid"]
+        if self.is_same_quote_base_currency_pair:
+           qh_close = 1
         else:
-            qh_close = ticker_qh["ask"]
+            ticker_qh = self.ticker.prices[self.quote_base_currency_pair]
+
+            if self.position_type == "long":
+                qh_close = ticker_qh["bid"]
+            else:
+                qh_close = ticker_qh["ask"]
+
         profit = pips * qh_close * self.units
         return profit.quantize(
             Decimal("0.00001"), ROUND_HALF_DOWN
@@ -57,14 +64,19 @@ class Position(object):
             Decimal("0.00001"), ROUND_HALF_DOWN
         )
 
-    def update_position_price(self):
-        ticker_cur = self.ticker.prices[self.currency_pair]
-        if self.position_type == "long":
-            self.cur_price = Decimal(str(ticker_cur["bid"]))
-        else:
-            self.cur_price = Decimal(str(ticker_cur["ask"]))
-        self.profit_base = self.calculate_profit_base()
-        self.profit_perc = self.calculate_profit_perc()
+    def update_position_price(self, **openorder):
+        print (openorder)
+        print (openorder['instrument'])
+        print (openorder['units'])
+        print (openorder['side'])
+ 
+#        ticker_cur = self.ticker.prices[self.currency_pair]
+#        if self.position_type == "long":
+#            self.cur_price = Decimal(str(ticker_cur["bid"]))
+#        else:
+#            self.cur_price = Decimal(str(ticker_cur["ask"]))
+#        self.profit_base = self.calculate_profit_base()
+#        self.profit_perc = self.calculate_profit_perc()
 
     def add_units(self, units):
         cp = self.ticker.prices[self.currency_pair]
@@ -81,7 +93,7 @@ class Position(object):
     def remove_units(self, units):
         dec_units = Decimal(str(units))
         ticker_cp = self.ticker.prices[self.currency_pair]
-        ticker_qh = self.ticker.prices[self.quote_home_currency_pair]
+        ticker_qh = self.ticker.prices[self.quote_base_currency_pair]
         if self.position_type == "long":
             remove_price = ticker_cp["bid"]
             qh_close = ticker_qh["ask"]
@@ -97,11 +109,24 @@ class Position(object):
 
     def close_position(self):
         ticker_cp = self.ticker.prices[self.currency_pair]
+<<<<<<< HEAD
         ticker_qh = self.ticker.prices[self.quote_home_currency_pair]
         if self.position_type == "long":
             qh_close = ticker_qh["ask"]
         else:
             qh_close = ticker_qh["bid"]
+=======
+        if self.is_same_quote_base_currency_pair:
+           qh_close = 1
+        else:
+            ticker_qh = self.ticker.prices[self.quote_base_currency_pair]
+            if self.position_type == "long":
+                remove_price = ticker_cp["ask"]
+                qh_close = ticker_qh["bid"]
+            else:
+                remove_price = ticker_cp["bid"]
+                qh_close = ticker_qh["ask"]
+>>>>>>> nkm/master
         self.update_position_price()
         # Calculate PnL
         pnl = self.calculate_pips() * qh_close * self.units

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 try:
@@ -15,9 +17,13 @@ class Backtest(object):
     an event-driven backtest on the foreign exchange markets.
     """
     def __init__(
-        self, pairs, data_handler, strategy, 
-        strategy_params, portfolio, execution, 
-        equity=100000.0, heartbeat=0.0, 
+        self, pairs, data_handler,
+        tradesignalstrategy, tradesignalstrategy_params,
+        tradeenterstrategy, tradeenterstrategy_params,
+        tradeexitstrategy, tradeexitstrategy_params,
+        portfolio, transaction, 
+        equity=100000.0, heartbeat=0.0, base_currency="USD",
+        startday=20150110, endday=20150208,
         max_iters=10000000000
     ):
         """
@@ -26,24 +32,29 @@ class Backtest(object):
         self.pairs = pairs
         self.events = queue.Queue()
         self.csv_dir = settings.CSV_DATA_DIR
-        self.ticker = data_handler(self.pairs, self.events, self.csv_dir)
-        self.strategy_params = strategy_params
-        self.strategy = strategy(
-            self.pairs, self.events, **self.strategy_params
-        )
+        self.startday = startday
+        self.endday = endday
+        self.base_currency = base_currency
+        self.ticker = data_handler(self.pairs, self.base_currency, self.events, self.csv_dir, self.startday, self.endday)
+        self.transaction = transaction(base_currency)
+        self.tradesignalstrategy_params = tradesignalstrategy_params
+        self.tradeenterstrategy_params = tradeenterstrategy_params
+        self.tradeexitstrategy_params = tradeexitstrategy_params
+        self.tradesignalstrategy = tradesignalstrategy(self.pairs, self.events, **self.tradesignalstrategy_params)
+        self.tradeenterstrategy = tradeenterstrategy(self.pairs, self.transaction, self.ticker, **self.tradeenterstrategy_params)
+        self.tradeexitstrategy = tradeexitstrategy(self.pairs, self.transaction, self.ticker, **self.tradeexitstrategy_params)
         self.equity = equity
         self.heartbeat = heartbeat
         self.max_iters = max_iters
         self.portfolio = portfolio(
-            self.ticker, self.events, equity=self.equity, backtest=True
+            self.ticker, self.events, transaction=self.transaction, equity=self.equity, base_currency=self.base_currency, backtest=True
         )
-        self.execution = execution()
 
     def _run_backtest(self):
         """
         Carries out an infinite while loop that polls the 
         events queue and directs each event to either the
-        strategy component of the execution handler. The
+        strategy component of the transaction handler. The
         loop will then pause for "heartbeat" seconds and
         continue unti the maximum number of iterations is
         exceeded.
@@ -58,12 +69,13 @@ class Backtest(object):
             else:
                 if event is not None:
                     if event.type == 'TICK':
-                        self.strategy.calculate_signals(event)
+                        if event.instrument in self.pairs:
+                            self.tradesignalstrategy.calculate_signals(event)
                         self.portfolio.update_portfolio(event)
                     elif event.type == 'SIGNAL':
-                        self.portfolio.execute_signal(event)
+                        self.tradeenterstrategy.execute_signal(event)
                     elif event.type == 'ORDER':
-                        self.execution.execute_order(event)
+                        self.transaction.execute_order(event)
             time.sleep(self.heartbeat)
             iters += 1
 

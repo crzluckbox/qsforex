@@ -10,6 +10,9 @@ import time
 import numpy as np
 import pandas as pd
 
+from datetime import datetime as dt
+from datetime import timedelta
+
 from qsforex import settings
 from qsforex.event.event import TickEvent
 
@@ -73,6 +76,64 @@ class PriceHandler(object):
         )
         return inv_pair, inv_bid, inv_ask
 
+def check_reverse_pair(pair):
+    if pair == "USDEUR":
+       return ("EURUSD")
+    if pair == "JPYUSD":
+       return ("USDJPY")
+    if pair == "USDGBP":
+       return ("GBPUSD")
+    if pair == "USDAUD":
+       return ("AUDUSD")
+    if pair == "CHFUSD":
+       return ("USDCHF")
+    if pair == "CADUSD":
+       return ("USDCAD")
+    if pair == "USDNZD":
+       return ("NZDUSD")
+    if pair == "JPYEUR":
+       return ("EURJPY")
+    if pair == "GBPEUR":
+       return ("GBPEUR")
+    if pair == "JPYGBP":
+       return ("GBPJPY")
+    if pair == "AUDEUR":
+       return ("EURAUD")
+    if pair == "JPYAUD":
+       return ("AUDJPY")
+    if pair == "AUDGBP":
+       return ("GBPAUD")
+    if pair == "CHFEUR":
+       return ("EURCHF")
+    if pair == "JPYCHF":
+       return ("CHFJPY")
+    if pair == "CHFGBP":
+       return ("GBPCHF")
+    if pair == "CHFAUD":
+       return ("AUDCHF")
+    if pair == "CADEUR":
+       return ("EURCAD")
+    if pair == "JPYCAD":
+       return ("CADJPY")
+    if pair == "CADGBP":
+       return ("GBPCAD")
+    if pair == "CADAUD":
+       return ("AUDCAD")
+    if pair == "CHFCAD":
+       return ("CADCHF")
+    if pair == "NZDEUR":
+       return ("EURNZD")
+    if pair == "JPYNZD":
+       return ("NZDJPY")
+    if pair == "NZDGBP":
+       return ("GBPNZD")
+    if pair == "NZDAUD":
+       return ("NZDAUD")
+    if pair == "CHFNZD":
+       return ("NZDCHF")
+    if pair == "CADNZD":
+       return ("NZDCAD")
+    return(pair)
 
 class HistoricCSVPriceHandler(PriceHandler):
     """
@@ -81,7 +142,7 @@ class HistoricCSVPriceHandler(PriceHandler):
     to the provided events queue.
     """
 
-    def __init__(self, pairs, events_queue, csv_dir):
+    def __init__(self, pairs, base_currency, events_queue, csv_dir, startday, endday):
         """
         Initialises the historic data handler by requesting
         the location of the CSV files and a list of symbols.
@@ -95,35 +156,51 @@ class HistoricCSVPriceHandler(PriceHandler):
         events_queue - The events queue to send the ticks to.
         csv_dir - Absolute directory path to the CSV files.
         """
-        self.pairs = pairs
+        self.base_currency = base_currency
+        self._pairs = []
+        for _pair in pairs:
+            self._pairs.append(_pair)
+            if _pair[3:] != self.base_currency:
+                __pair__ = _pair[3:] + self.base_currency
+                self._pairs.append(check_reverse_pair(__pair__))
+        self.pairs = list(set(self._pairs))
+
         self.events_queue = events_queue
         self.csv_dir = csv_dir
         self.prices = self._set_up_prices_dict()
         self.pair_frames = {}
-        self.file_dates = self._list_all_file_dates()
+        self.file_dates = self._list_all_file_dates(self.pairs, startday, endday)
         self.continue_backtest = True
         self.cur_date_idx = 0
         self.cur_date_pairs = self._open_convert_csv_files_for_day(
             self.file_dates[self.cur_date_idx]
         )
 
-    def _list_all_csv_files(self):
-        files = os.listdir(settings.CSV_DATA_DIR)
-        pattern = re.compile("[A-Z]{6}_\d{8}.csv")
-        matching_files = [f for f in files if pattern.search(f)]
-        matching_files.sort()
-        return matching_files
 
-    def _list_all_file_dates(self):
+
+    def _list_all_file_dates(self, pairs, startday, endday):
         """
         Removes the pair, underscore and '.csv' from the
         dates and eliminates duplicates. Returns a list
         of date strings of the form "YYYYMMDD". 
         """
-        csv_files = self._list_all_csv_files()
-        de_dup_csv = list(set([d[7:-4] for d in csv_files]))
-        de_dup_csv.sort()
-        return de_dup_csv
+        start_dt = dt.strptime(str(startday), '%Y%m%d')
+        end_dt = dt.strptime(str(endday), '%Y%m%d')
+        date_list = []
+        for n in range((end_dt - start_dt).days + 1):
+            date_list.append(start_dt + timedelta(n))
+
+        matching_list = []
+        for _pair in self.pairs:
+            for _date in date_list:
+               file=settings.CSV_DATA_DIR + _pair + "/tick/" + str(_date.year) + "/" + _pair + "_" + str(_date.year) + "%02d" % int(_date.month) + "%02d" % int(_date.day) + ".csv"
+               if os.path.isfile(file):
+                   matching_list.append(str(_date.year) + "%02d" % int(_date.month) + "%02d" % int(_date.day))
+               else:
+                   continue
+               matching_list_uniq=list(set(matching_list))
+               matching_list_uniq.sort()
+        return matching_list_uniq
 
     def _open_convert_csv_files_for_day(self, date_str):
         """
@@ -136,11 +213,12 @@ class HistoricCSVPriceHandler(PriceHandler):
         in a chronological fashion.
         """
         for p in self.pairs:
-            pair_path = os.path.join(self.csv_dir, '%s_%s.csv' % (p, date_str))
+            _dt = dt.strptime(date_str, '%Y%m%d')
+            pair_path = os.path.join(self.csv_dir, '%s/tick/%d/%s_%s.csv' % (p, int(_dt.year), p, date_str))
             self.pair_frames[p] = pd.io.parsers.read_csv(
-                pair_path, header=True, index_col=0, 
-                parse_dates=True, dayfirst=True,
-                names=("Time", "Ask", "Bid", "AskVolume", "BidVolume")
+                pair_path, header=False, index_col=0, 
+                parse_dates=True, dayfirst=False,
+                names=("Time", "Bid", "Ask", "BidVolume", "AskVolume")
             )
             self.pair_frames[p]["Pair"] = p
         return pd.concat(self.pair_frames.values()).sort().iterrows()

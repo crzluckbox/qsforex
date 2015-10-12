@@ -30,13 +30,13 @@ class TestLongGBPUSDPosition(unittest.TestCase):
     denominated currency of GBP, using 2,000 units of GBP/USD.
     """
     def setUp(self):
-        home_currency = "GBP"
+        base_currency = "GBP"
         position_type = "long"
         currency_pair = "GBPUSD"
         units = Decimal("2000")
         ticker = TickerMock()
         self.position = Position(
-            home_currency, position_type, 
+            base_currency, position_type, 
             currency_pair, units, ticker
         )
 
@@ -79,13 +79,13 @@ class TestShortGBPUSDPosition(unittest.TestCase):
     denominated currency of GBP, using 2,000 units of GBP/USD.
     """
     def setUp(self):
-        home_currency = "GBP"
+        base_currency = "GBP"
         position_type = "short"
         currency_pair = "GBPUSD"
         units = Decimal("2000")
         ticker = TickerMock()
         self.position = Position(
-            home_currency, position_type, 
+            base_currency, position_type, 
             currency_pair, units, ticker
         )
 
@@ -132,13 +132,13 @@ class TestLongEURUSDPosition(unittest.TestCase):
     denominated currency of GBP, using 2,000 units of EUR/USD.
     """
     def setUp(self):
-        home_currency = "GBP"
+        base_currency = "GBP"
         position_type = "long"
         currency_pair = "EURUSD"
         units = Decimal("2000")
         ticker = TickerMock()
         self.position = Position(
-            home_currency, position_type, 
+            base_currency, position_type, 
             currency_pair, units, ticker
         )
 
@@ -182,13 +182,13 @@ class TestLongEURUSDPosition(unittest.TestCase):
     denominated currency of GBP, using 2,000 units of EUR/USD.
     """
     def setUp(self):
-        home_currency = "GBP"
+        base_currency = "GBP"
         position_type = "short"
         currency_pair = "EURUSD"
         units = Decimal("2000")
         ticker = TickerMock()
         self.position = Position(
-            home_currency, position_type, 
+            base_currency, position_type, 
             currency_pair, units, ticker
         )
 

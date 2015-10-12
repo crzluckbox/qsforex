@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class Event(object):
     pass
 
@@ -39,10 +41,11 @@ class SignalEvent(Event):
 
 
 class OrderEvent(Event):
-    def __init__(self, instrument, units, order_type, side):
+    def __init__(self, instrument, units, side, order_type, expiry=None, price=None, lowerBound=None, upperBound=None, stopLoss=None, takeProfit=None, trailingStop=None):
         self.type = 'ORDER'
         self.instrument = instrument
         self.units = units
+<<<<<<< HEAD
         self.order_type = order_type
         self.side = side
 
@@ -54,3 +57,14 @@ class OrderEvent(Event):
 
     def __repr__(self):
         return str(self)
+=======
+        self.side = side        
+        self.order_type = order_type
+        self.expiry = expiry
+        self.price = price
+        self.lowerBound = lowerBound
+        self.upperBound = upperBound
+        self.stopLoss = stopLoss
+        self.takeProfit = takeProfit
+        self.trailingStop = trailingStop
+>>>>>>> nkm/master
